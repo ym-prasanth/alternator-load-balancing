@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-class AlternatorHttpClient implements SdkHttpClient {
+public class AlternatorHttpClient implements SdkHttpClient {
     AlternatorLiveNodes liveNodes;
     private static Logger logger = Logger.getLogger(AlternatorHttpClient.class.getName());
 
