@@ -1,17 +1,18 @@
 package com.scylladb.alternator;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Arrays;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import java.util.Set;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
 import java.net.MalformedURLException;
 import java.net.HttpURLConnection;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -25,11 +26,14 @@ import java.util.logging.Level;
  * to one of these nodes.
  */
 public class AlternatorLiveNodes extends Thread {
+    private static final long BAD_NODES_RESET_INTERVAL_MILLIS = TimeUnit.HOURS.toMillis(1);
     private String alternatorScheme;
     private int alternatorPort;
 
     private List<String> liveNodes;
     private int nextLiveNodeIndex;
+    private Set<String> badNodes = new HashSet<>();
+    private long badNodesListLastResetMillis = System.currentTimeMillis();
 
     private static Logger logger = Logger.getLogger(AlternatorLiveNodes.class.getName());
 
@@ -86,9 +90,9 @@ public class AlternatorLiveNodes extends Thread {
         }
     }
 
-    public URL nextAsURL(String file) {
+    public URL nextAsURL(String file, String nextNode) {
         try {
-            return new URL(alternatorScheme, nextNode(), alternatorPort, file);
+            return new URL(alternatorScheme, nextNode, alternatorPort, file);
         } catch (MalformedURLException e) {
             // Can only happen if alternatorScheme is an unknown one.
             logger.log(Level.WARNING, "nextAsURL", e);
@@ -104,8 +108,10 @@ public class AlternatorLiveNodes extends Thread {
     }
 
     private void updateLiveNodes() {
-        List<String> newHosts = new ArrayList<String>();
-        URL url = nextAsURL("/localnodes");
+        clearBadNodes();
+        List<String> newHosts = new ArrayList<>();
+        String nextNode = nextNode();
+        URL url = nextAsURL("/localnodes", nextNode);
         try {
             // Note that despite this being called HttpURLConnection, it actually
             // supports HTTPS as well.
@@ -125,14 +131,28 @@ public class AlternatorLiveNodes extends Thread {
                 }
             }
         } catch (IOException e) {
-            logger.log(Level.FINE, "Request failed: " + url, e);
+            logger.log(Level.WARNING, "Request failed: " + url, e);
+            badNodes.add(nextNode);
+            logger.log(Level.WARNING, "Marked node " + nextNode + " as bad");
         }
+        newHosts.removeAll(badNodes);
         if (!newHosts.isEmpty()) {
             synchronized(this) {
                 this.liveNodes = newHosts;
                 this.nextLiveNodeIndex = 0;
             }
-            logger.log(Level.FINE, "Updated hosts to " + this.liveNodes.toString());
+            logger.log(Level.FINE, "Updated hosts to " + this.liveNodes);
+            if (!badNodes.isEmpty()) {
+                logger.log(Level.INFO, "Bad nodes " + badNodes);
+            }
+        }
+    }
+
+    private void clearBadNodes() {
+        if (System.currentTimeMillis() - badNodesListLastResetMillis > BAD_NODES_RESET_INTERVAL_MILLIS) {
+            badNodes.clear();
+            badNodesListLastResetMillis = System.currentTimeMillis();
+            logger.log(Level.INFO, "Cleared bad nodes list");
         }
     }
 }
