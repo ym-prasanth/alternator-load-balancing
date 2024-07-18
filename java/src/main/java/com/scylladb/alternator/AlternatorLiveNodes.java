@@ -152,6 +152,7 @@ public class AlternatorLiveNodes extends Thread {
         if (System.currentTimeMillis() - badNodesListLastResetMillis > BAD_NODES_RESET_INTERVAL_MILLIS) {
             badNodes.clear();
             badNodesListLastResetMillis = System.currentTimeMillis();
+            logger.log(Level.FINE, "Cleared bad nodes list");
         }
     }
 }
