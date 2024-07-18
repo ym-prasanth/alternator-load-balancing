@@ -26,7 +26,7 @@ import java.util.logging.Level;
  * to one of these nodes.
  */
 public class AlternatorLiveNodes extends Thread {
-    private static final long BAD_NODES_RESET_INTERVAL_MILLIS = TimeUnit.HOURS.toMillis(1);
+    private static final long BAD_NODES_RESET_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
     private String alternatorScheme;
     private int alternatorPort;
 
