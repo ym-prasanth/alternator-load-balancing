@@ -131,7 +131,7 @@ public class AlternatorLiveNodes extends Thread {
                 }
             }
         } catch (IOException e) {
-            logger.log(Level.FINE, "Request failed: " + url, e);
+            logger.log(Level.WARNING, "Request failed: " + url, e);
             badNodes.add(nextNode);
             logger.log(Level.WARNING, "Marked node " + nextNode + " as bad");
         }
@@ -143,7 +143,7 @@ public class AlternatorLiveNodes extends Thread {
             }
             logger.log(Level.FINE, "Updated hosts to " + this.liveNodes);
             if (!badNodes.isEmpty()) {
-                logger.log(Level.FINE, "Bad nodes " + badNodes);
+                logger.log(Level.INFO, "Bad nodes " + badNodes);
             }
         }
     }
@@ -152,7 +152,7 @@ public class AlternatorLiveNodes extends Thread {
         if (System.currentTimeMillis() - badNodesListLastResetMillis > BAD_NODES_RESET_INTERVAL_MILLIS) {
             badNodes.clear();
             badNodesListLastResetMillis = System.currentTimeMillis();
-            logger.log(Level.FINE, "Cleared bad nodes list");
+            logger.log(Level.INFO, "Cleared bad nodes list");
         }
     }
 }
